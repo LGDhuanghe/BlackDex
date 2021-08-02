@@ -24,8 +24,8 @@ android {
         }
     }
     externalNativeBuild {
-        cmake {
-            path file('./src/main/cpp/CMakeLists.txt')
+        ndkBuild {
+            path file('src/main/jni/Android.mk')
         }
     }
     dexOptions {
@@ -61,6 +61,7 @@ tasks.withType(Javadoc) {
     options.addStringOption('encoding', 'UTF-8')
     options.addStringOption('charSet', 'UTF-8')
 }
+
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])

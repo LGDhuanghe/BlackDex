@@ -11,7 +11,6 @@ package top.niunaijun.jnihook;
 
 import androidx.annotation.Keep;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 @Keep
@@ -37,18 +36,6 @@ public class MethodUtils {
         }
         buf.append(")");
         buf.append(getDesc(method.getReturnType()));
-        return buf.toString();
-    }
-
-    // native call
-    public static String getDesc(final Constructor<?> method) {
-        final StringBuffer buf = new StringBuffer();
-        buf.append("(");
-        final Class<?>[] types = method.getParameterTypes();
-        for (int i = 0; i < types.length; ++i) {
-            buf.append(getDesc(types[i]));
-        }
-        buf.append(")V");
         return buf.toString();
     }
 

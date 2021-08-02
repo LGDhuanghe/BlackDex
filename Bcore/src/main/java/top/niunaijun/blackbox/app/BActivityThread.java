@@ -13,7 +13,6 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -29,7 +28,6 @@ import top.niunaijun.blackbox.core.VMCore;
 import top.niunaijun.blackbox.entity.AppConfig;
 import top.niunaijun.blackbox.core.IOCore;
 import top.niunaijun.blackbox.entity.dump.DumpResult;
-import top.niunaijun.blackbox.utils.FileUtils;
 import top.niunaijun.blackbox.utils.Slog;
 import top.niunaijun.blackbox.BlackBoxCore;
 
@@ -140,7 +138,7 @@ public class BActivityThread extends IBActivityThread.Stub {
         }
     }
 
-    private synchronized void handleBindApplication(String packageName, String processName) {
+    public synchronized void handleBindApplication(String packageName, String processName) {
         DumpResult result = new DumpResult();
         result.packageName = packageName;
         result.dir = new File(BlackBoxCore.get().getDexDumpDir(), packageName).getAbsolutePath();
@@ -162,10 +160,6 @@ public class BActivityThread extends IBActivityThread.Stub {
             // fix applicationInfo
             LoadedApk.mApplicationInfo.set(loadedApk, applicationInfo);
 
-            // clear dump file
-            FileUtils.deleteDir(new File(BlackBoxCore.get().getDexDumpDir(), packageName));
-
-            // init vmCore
             VMCore.init(Build.VERSION.SDK_INT);
             assert packageContext != null;
             IOCore.get().enableRedirect(packageContext);
@@ -188,14 +182,12 @@ public class BActivityThread extends IBActivityThread.Stub {
             Application application = null;
             BlackBoxCore.get().getAppLifecycleCallback().beforeCreateApplication(packageName, processName, packageContext);
             try {
-                ClassLoader call = LoadedApk.getClassloader.call(loadedApk);
                 application = LoadedApk.makeApplication.call(loadedApk, false, null);
             } catch (Throwable e) {
                 Slog.e(TAG, "Unable to makeApplication");
                 e.printStackTrace();
             }
             mInitialApplication = application;
-            ActivityThread.mInitialApplication.set(BlackBoxCore.mainThread(), mInitialApplication);
             if (Objects.equals(packageName, processName)) {
                 ClassLoader loader;
                 if (application == null) {
@@ -207,8 +199,9 @@ public class BActivityThread extends IBActivityThread.Stub {
             }
         } catch (Throwable e) {
             e.printStackTrace();
+            result.dumpError(e.getMessage());
             mAppConfig = null;
-            BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpError(e.getMessage()));
+            BlackBoxCore.getBDumpManager().noticeMonitor(result);
             BlackBoxCore.get().uninstallPackage(packageName);
         }
     }
@@ -220,15 +213,14 @@ public class BActivityThread extends IBActivityThread.Stub {
             } catch (InterruptedException ignored) {
             }
             try {
-                VMCore.cookieDumpDex(classLoader, packageName);
+                VMCore.dumpDex(classLoader, packageName);
             } finally {
                 mAppConfig = null;
                 File dir = new File(result.dir);
                 if (!dir.exists() || dir.listFiles().length == 0) {
-                    BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpError("not found dex file"));
-                } else {
-                    BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpSuccess());
+                    result.dumpError("not found dex file");
                 }
+                BlackBoxCore.getBDumpManager().noticeMonitor(result);
                 BlackBoxCore.get().uninstallPackage(packageName);
             }
         }).start();

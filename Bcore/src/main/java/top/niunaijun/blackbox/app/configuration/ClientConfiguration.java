@@ -27,12 +27,4 @@ public abstract class ClientConfiguration {
         FileUtils.mkdirs(dump);
         return dump.getAbsolutePath();
     }
-
-    public boolean isFixCodeItem() {
-        return false;
-    }
-
-    public boolean isEnableHookDump() {
-        return true;
-    }
 }

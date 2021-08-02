@@ -10,11 +10,8 @@ import kotlinx.coroutines.launch
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.BlackBoxCore.getPackageManager
 import top.niunaijun.blackbox.BlackDexCore
-import top.niunaijun.blackbox.entity.pm.InstallResult
 import top.niunaijun.blackbox.utils.AbiUtils
-import top.niunaijun.blackdex.R
-import top.niunaijun.blackdex.app.App
-import top.niunaijun.blackdex.app.AppManager
+import top.niunaijun.blackbox.utils.FileUtils
 import top.niunaijun.blackdex.data.entity.AppInfo
 import top.niunaijun.blackdex.data.entity.DumpInfo
 import java.io.File
@@ -31,8 +28,7 @@ class DexDumpRepository {
 
     fun getAppList(mAppListLiveData: MutableLiveData<List<AppInfo>>) {
 
-        val installedApplications: List<ApplicationInfo> =
-                getPackageManager().getInstalledApplications(0)
+        val installedApplications: List<ApplicationInfo> = getPackageManager().getInstalledApplications(0)
         val installedList = mutableListOf<AppInfo>()
 
         for (installedApplication in installedApplications) {
@@ -55,49 +51,38 @@ class DexDumpRepository {
     }
 
     fun dumpDex(source: String, dexDumpLiveData: MutableLiveData<DumpInfo>) {
+
         dexDumpLiveData.postValue(DumpInfo(DumpInfo.LOADING))
+
         val result = if (URLUtil.isValidUrl(source)) {
             BlackDexCore.get().dumpDex(Uri.parse(source))
-        } else if (source.contains("/")) {
-            BlackDexCore.get().dumpDex(File(source))
         } else {
             BlackDexCore.get().dumpDex(source)
         }
 
-        if (result != null) {
+        if(result){
             dumpTaskId++
-            startCountdown(result, dexDumpLiveData)
-        } else {
+            startCountdown(dexDumpLiveData)
+        }else{
             dexDumpLiveData.postValue(DumpInfo(DumpInfo.TIMEOUT))
         }
+
     }
 
 
-    fun dumpSuccess() {
+    fun dumpSuccess(){
         dumpTaskId++
     }
 
-    private fun startCountdown(installResult: InstallResult, dexDumpLiveData: MutableLiveData<DumpInfo>) {
+    private fun startCountdown(dexDumpLiveData: MutableLiveData<DumpInfo>){
         GlobalScope.launch {
             val tempId = dumpTaskId
-            while (BlackDexCore.get().isRunning) {
-                delay(20000)
-                //10s
-                if (!AppManager.mBlackBoxLoader.isFixCodeItem()) {
-                    break
-                }
-                //fixCodeItem 需要长时间运行，普通内存dump不需要
-            }
-            if (tempId == dumpTaskId) {
-                if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
-                    dexDumpLiveData.postValue( DumpInfo(
-                            DumpInfo.SUCCESS,
-                            App.getContext().getString(R.string.dex_save, File(BlackBoxCore.get().dexDumpDir, installResult.packageName).absolutePath)
-                    ))
-                } else {
-                    dexDumpLiveData.postValue(DumpInfo(DumpInfo.TIMEOUT))
-                }
+            delay(10000)
+
+            if(tempId == dumpTaskId){
+                dexDumpLiveData.postValue(DumpInfo(DumpInfo.TIMEOUT))
             }
         }
+
     }
 }
