@@ -50,7 +50,7 @@ import top.niunaijun.blackbox.core.system.ServiceManager;
 @SuppressLint("StaticFieldLeak")
 public class BlackBoxCore extends ClientConfiguration {
     public static final String TAG = "BlackBoxCore";
-    private static final int USER_ID = 0;
+    public static final int USER_ID = 0;
 
     private static final BlackBoxCore sBlackBoxCore = new BlackBoxCore();
     private static Context sContext;
@@ -99,13 +99,13 @@ public class BlackBoxCore extends ClientConfiguration {
 //            android.os.Debug.waitForDebugger();
         }
         if (isServerProcess()) {
-            Intent intent = new Intent();
-            intent.setClass(getContext(), DaemonService.class);
-            if (BuildCompat.isOreo()) {
-                getContext().startForegroundService(intent);
-            } else {
-                getContext().startService(intent);
-            }
+//            Intent intent = new Intent();
+//            intent.setClass(getContext(), DaemonService.class);
+//            if (BuildCompat.isOreo()) {
+//                getContext().startForegroundService(intent);
+//            } else {
+//                getContext().startService(intent);
+//            }
         }
         HookManager.get().init();
     }
@@ -236,6 +236,16 @@ public class BlackBoxCore extends ClientConfiguration {
     @Override
     public String getDexDumpDir() {
         return mClientConfiguration.getDexDumpDir();
+    }
+
+    @Override
+    public boolean isFixCodeItem() {
+        return mClientConfiguration.isFixCodeItem();
+    }
+
+    @Override
+    public boolean isEnableHookDump() {
+        return mClientConfiguration.isEnableHookDump();
     }
 
     private void startLogcat() {
